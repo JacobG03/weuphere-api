@@ -5,16 +5,13 @@
 ### [] User => UserAlt: id, username, avatar, user_id
 
 
-## [] Post: id, title, timestamp, author
-### [] PostAdditional: id, display_comments, display_likes, post_id 
-### [] Post<Type>: Image, URL, Text, post_id
+## [*] Post: id, title, timestamp, author
+### [*] Category: e.g: Image, URL, Text
 
-## [] Comment: id, body, timestamp, post_id user_id, replies
-## [] reply: id, body, timestamp, user_id, parent, replies
+## [*] Comment: id, body, timestamp, post_id user_id, replies
+## [*] reply: id, body, timestamp, user_id, parent, replies
 
-## [] Reaction: id, emote, parent_id    (works for post, comment and reply respectfully)
-
-
+## [*] Reaction: id, emote, parent_id    (works for post, comment and reply respectfully)
 
 
 
