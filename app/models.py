@@ -1,4 +1,3 @@
-from flask.sessions import NullSession
 from app import db
 from datetime import datetime
 
