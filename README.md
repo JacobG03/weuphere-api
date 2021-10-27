@@ -1,7 +1,7 @@
 # Models
 
-## [] User: id, username, email, password, boolean:auth
-### [] User => UserMore: id, avatar, date_of_birth, location
+## [*] User: id, username, email, password, boolean:auth
+### [*] User => UserMore: id, avatar, date_of_birth, location
 ### [] User => UserAlt: id, username, avatar, user_id
 
 
