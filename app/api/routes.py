@@ -1,14 +1,28 @@
 from app import app, db
 from app.models import User
+from .schemas import CreateRegisterSchema
 from flask import request, jsonify, make_response, Blueprint
 from werkzeug.security import generate_password_hash, check_password_hash
-import jwt
-import datetime
-from app.decorators import token_required
-from .schemas import CreateRegisterSchema
+from datetime import datetime, timezone, timedelta
+
+from flask_jwt_extended import create_access_token, get_jwt, get_jwt_identity, jwt_required, set_access_cookies, unset_jwt_cookies
 
 
 api = Blueprint('api', __name__, url_prefix='/api')
+
+@api.after_request
+def refresh_expiring_jwts(response):
+  try:
+    exp_timestamp = get_jwt()["exp"]
+    now = datetime.now(timezone.utc)
+    target_timestamp = datetime.timestamp(now + timedelta(minutes=30))
+    if target_timestamp > exp_timestamp:
+        access_token = create_access_token(identity=get_jwt_identity())
+        set_access_cookies(response, access_token)
+    return response
+  except (RuntimeError, KeyError):
+    # Case where there is not a valid JWT. Just return the original respone
+    return response
 
 @api.get('/')
 def index():
@@ -23,14 +37,6 @@ def index():
 
 #! get /api/user    (current_user) (:user === some other user)
 
-
-@api.get('/auth')
-@token_required(refresh=True)
-def auth(current_user):
-  token = jwt.encode({'id' : current_user.id, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=45)}, app.config['SECRET_KEY'], "HS256")
-  return jsonify({'token' : token})
-
-#? post /api/auth/register
 
 registerSchema = CreateRegisterSchema()
 
@@ -90,13 +96,19 @@ def login():
 
   user = User.query.filter_by(email=data['email']).first()  
   if check_password_hash(user.password, data['password']):
-    token = jwt.encode({'id' : user.id, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=45)}, app.config['SECRET_KEY'], "HS256")
-
-    return jsonify({'token' : token})
+    access_token = create_access_token(identity=[user.username, user.id])
+    set_access_cookies(jsonify({'token' : access_token}), access_token)
+    return jsonify({'token' : access_token})
 
   return make_response('could not verify',  401, {'Authentication': '"login required"'})
 
 
+@api.get('/auth/refresh')
+@jwt_required(locations=['headers', 'cookies'])
+def refresh():
+  identity = get_jwt_identity()
+  access_token = create_access_token(identity=identity)
+  return jsonify(access_token=access_token)
 
 
 #* get /api/:user     (:user or :id)
@@ -111,8 +123,8 @@ def login():
 #! get /api/users     returns all /users routes
 
 @api.get('/users')
-@token_required
-def users(current_user):
+@jwt_required(locations=['headers', 'cookies'])
+def users():
   return jsonify({
     'message': 'Working'
   })

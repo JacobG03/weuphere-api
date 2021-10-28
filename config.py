@@ -1,4 +1,7 @@
 import os
+from datetime import timedelta
+
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -11,3 +14,9 @@ class Config(object):
     'sqlite:///' + os.path.join(basedir, 'app.db')
   SQLALCHEMY_TRACK_MODIFICATIONS = False
   SESSION_TYPE = 'filesystem'
+
+  # JWT config
+  JWT_COOKIE_SECURE = False
+  JWT_TOKEN_LOCATION = ["cookies"]
+  JWT_SECRET_KEY = "supa-dupa-secreeet"
+  JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
