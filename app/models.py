@@ -4,18 +4,18 @@ from datetime import datetime
 
 class User(db.Model):
   id = db.Column(db.Integer, primary_key=True)
-  name = db.Column(db.String(64), nullable=False)
-  surname = db.Column(db.String(64), nullable=False)
+  username = db.Column(db.String(64), unique=True)
   email = db.Column(db.String(128), unique=True, nullable=False)
   password = db.Column(db.String(256), nullable=False)
-  auth = db.Column(db.Boolean, default=False)
-
-  avatar = db.Column(db.String(512), default='https://avatarfiles.alphacoders.com/498/49849.png',nullable=True)
+  avatar = db.Column(db.String(512), default='https://avatarfiles.alphacoders.com/498/49849.png', nullable=True)
   date_of_birth = db.Column(db.DateTime, nullable=True)
   location = db.Column(db.String(128), nullable=True)
 
+  timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+  auth = db.Column(db.Boolean, default=False)
+
   def __repr__(self):
-    return f'id: {self.id}, name: {self.name}'
+    return f'id: {self.id}, username: {self.username}'
 
 
 class Post(db.Model):
@@ -35,7 +35,7 @@ class Post(db.Model):
     return f'id: {self.id}, title: {self.title}'
 
 
-#? Post categories , e.g: Text, URL, Video
+#? Post categories, e.g: Text, URL, Video
 class Category(db.Model):
   id = db.Column(db.Integer, primary_key=True)
   name = db.Column(db.String(64), nullable=False)
