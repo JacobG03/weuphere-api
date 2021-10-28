@@ -5,6 +5,7 @@ from flask import request, jsonify, make_response
 import jwt
 import datetime
 from app.decorators import token_required
+from app.schemas import CreateRegisterSchema
 
 
 @app.get('/api')
@@ -20,14 +21,23 @@ def api():
 
 #? post /api/user/register
 
+registerSchema = CreateRegisterSchema()
+
 @app.post('/api/user/register')
 def register():
   data = request.get_json()
-  hashed_password = generate_password_hash(data['password'], method='sha256')
+  if data['password'] != data['password2']:
+    return jsonify({
+      'password': ['Passwords must match'],
+      'password2': ['Passwords must match']
+    })
+  errors = registerSchema.validate(data)
+  if errors:
+    return jsonify(errors)
 
+  hashed_password = generate_password_hash(data['password'], method='sha256')
   user = User(
-    name=data['name'],
-    surname=data['surname'],
+    username=data['username'],
     email=data['email'],
     password=hashed_password,
   )
