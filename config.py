@@ -4,7 +4,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config(object):
   # General
-  SECRET_KEY = os.environ.get('SECRET_KEY') or 'my-secret-key'
+  SECRET_KEY = os.environ.get('SECRET_KEY') or '12uh3qadsjn-zxckey'
 
   # Database config
   SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_IRL') or \

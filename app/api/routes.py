@@ -1,45 +1,75 @@
-from werkzeug.security import generate_password_hash, check_password_hash
 from app import app, db
 from app.models import User
-from flask import request, jsonify, make_response
+from flask import request, jsonify, make_response, Blueprint
+from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 import datetime
 from app.decorators import token_required
-from app.schemas import CreateRegisterSchema
+from .schemas import CreateRegisterSchema
 
 
-@app.get('/api')
-def api():
-  return {
+api = Blueprint('api', __name__, url_prefix='/api')
+
+@api.get('/')
+def index():
+  url = 'http://localhost:5000/api'
+  return jsonify({
     'message': 'Greetings! The API seems to be working..',
-    'routes': []
-  }
+    'routes': [
+      f'{url}/auth/register', 
+      f'{url}/auth/login', 
+    ]
+  })
 
 #! get /api/user    (current_user) (:user === some other user)
 
 
+@api.get('/auth')
+@token_required(refresh=True)
+def auth(current_user):
+  token = jwt.encode({'id' : current_user.id, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=45)}, app.config['SECRET_KEY'], "HS256")
+  return jsonify({'token' : token})
 
-#? post /api/user/register
+#? post /api/auth/register
 
 registerSchema = CreateRegisterSchema()
 
-@app.post('/api/user/register')
+@api.post('/auth/register')
 def register():
-  data = request.get_json()
-  if data['password'] != data['password2']:
+  data = request.get_json(silent=True)
+  if data == None:
     return jsonify({
-      'password': ['Passwords must match'],
-      'password2': ['Passwords must match']
-    })
+      'message': "'form' required",
+      'form': {
+        'username': None,
+        'email': None,
+        'password': None,
+        'password2': None,
+      }
+    }), 400
+  
   errors = registerSchema.validate(data)
   if errors:
-    return jsonify(errors)
+    return jsonify({
+      'success': False,
+      'errors': errors
+    }), 400
 
-  hashed_password = generate_password_hash(data['password'], method='sha256')
+  elif data['password'] != data['password2']:
+    return jsonify({
+      'success': False,
+      'errors': {
+        'password': ['Passwords must match'],
+        'password2': ['Passwords must match']
+      }
+    }), 400
+
+
+  #? If all OK
   user = User(
     username=data['username'],
     email=data['email'],
-    password=hashed_password,
+    password=generate_password_hash(data['password'], method='sha256'),
   )
 
   db.session.add(user)
@@ -48,11 +78,11 @@ def register():
   return jsonify({
     'success': True,
     'message': 'Registered successfully'
-  })
+  }), 200
 
 
-#? post /api/user/login
-@app.post('/api/user/login')
+#? post /api/auth/login
+@api.post('/auth/login')
 def login():
   data = request.get_json()
   if not data or not data['email'] or not data['password']:
@@ -80,7 +110,7 @@ def login():
 
 #! get /api/users     returns all /users routes
 
-@app.get('/api/users')
+@api.get('/users')
 @token_required
 def users(current_user):
   return jsonify({
