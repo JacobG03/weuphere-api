@@ -1,3 +1,4 @@
+from flask import jsonify
 from marshmallow import Schema, fields, validates, ValidationError
 from marshmallow.validate import Length
 import re
@@ -30,3 +31,8 @@ class CreateRegisterSchema(Schema):
     #* Case insensitive query filter
     elif User.query.filter(func.lower(User.email) == func.lower(value)).first():
       raise ValidationError('email taken')
+
+
+class CreateLoginSchema(Schema):
+  email = fields.Str(required=True,  validate=Length(3, 128))
+  password = fields.Str(required=True, validate=Length(4, 128))

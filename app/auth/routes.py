@@ -1,13 +1,16 @@
 from app import db
 from app.models import User
-from .schemas import CreateRegisterSchema
+from .schemas import CreateLoginSchema, CreateRegisterSchema
 from flask import request, jsonify, make_response, Blueprint
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, set_access_cookies, unset_jwt_cookies
 
+
 auth = Blueprint('auth', __name__, url_prefix='/auth')
 
 registerSchema = CreateRegisterSchema()
+loginSchema = CreateLoginSchema()
+
 
 @auth.post('/register')
 def register():
@@ -59,17 +62,40 @@ def register():
 #? post /api/auth/login
 @auth.post('/login')
 def login():
+  # if no json respond with example
+  data = request.get_json(silent=True)
+  if data == None:
+    return jsonify({
+      'message': "'form' required",
+      'form': {
+        'email': None,
+        'password': None,
+      }
+    }), 400
+    
   data = request.get_json()
-  if not data or not data['email'] or not data['password']:
-    return make_response('could not verify', 401, {'Authentication': 'login required"'})   
 
-  user = User.query.filter_by(email=data['email']).first()  
-  if check_password_hash(user.password, data['password']):
-    access_token = create_access_token(identity=[user.username, user.id])
-    set_access_cookies(jsonify({'token' : access_token}), access_token)
-    return jsonify({'token' : access_token})
+  errors = loginSchema.validate(data)
+  if errors:
+    return jsonify({
+      'success': False,
+      'errors': errors
+    }), 400
 
-  return make_response('could not verify',  401, {'Authentication': '"login required"'})
+  user = User.query.filter_by(email=data['email']).first() 
+  if user:
+    if check_password_hash(user.password, data['password']):
+      access_token = create_access_token(identity=[user.username, user.id])
+      set_access_cookies(jsonify({'token' : access_token}), access_token)
+      return jsonify({
+        'success': True,
+        'token' : access_token
+      })
+
+  return jsonify({
+    'success': False,
+    'message': 'incorrect email or password'
+  })
 
 
 @auth.get('/refresh')
