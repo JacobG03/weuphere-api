@@ -1,13 +1,13 @@
-from app import app, db
 from app.models import User
-from flask import request, jsonify, make_response, Blueprint
+from flask import config, request, jsonify, make_response, Blueprint
 from datetime import datetime, timezone, timedelta
-
+from sqlalchemy import func
 from flask_jwt_extended import create_access_token, get_jwt, get_jwt_identity, jwt_required, set_access_cookies
+from config import ApiConfig
 
 
 api = Blueprint('api', __name__, url_prefix='/api')
-
+config = ApiConfig()
 
 #? Refreshes token on every request with token expriring in less than < 30 minutes 
 
@@ -41,11 +41,21 @@ def index():
 
 
 #! get /api/user    (current_user) (:user === some other user)
+@api.get('/<username>')
+def user(username):
+  user = User.query.filter(func.lower(User.username) == func.lower(username)).first()
+  if not user:
+    return jsonify({
+      'success': False
+    })
+  return jsonify({
+    'user': {
+      'username': user.username
+    },
+    'success': True
+  })
 
 
-
-
-#* get /api/:user     (:user or :id)
 #* /api/:user/profile
 #* /api/:user/history   etc..
 
@@ -56,15 +66,35 @@ def index():
 
 #! get /api/users     returns all /users routes
 
+
 @api.get('/users')
-@jwt_required(locations=['headers', 'cookies'])
 def users():
+  return jsonify([
+    '/users/<number>/<number>?sort=descending',
+    '/users/<number>/<number>?sort=ascending'
+  ])
+
+
+@api.get('/users/<beg>/<end>')
+def users_from_to(beg, end):
+  users = []
+  # Append users to list
+  for i in range(int(beg), int(end) + 1):
+    # Limit set by server
+    if i == int(beg) + config.USERS_MAX_QUERY:
+      break
+    user = User.query.get(int(i))
+    if user:
+      users.append({
+        'id': user.id,
+        'username': user.username
+      })
+    
+  # Check for sorting query
+
+
   return jsonify({
-    'message': 'Working'
+    'users': users,
+    'message': f'{beg}, {end}, {request.args.get("sort")}'
   })
-
-#* get /api/users/1/500  default by id  (500 being the limit)
-#* get /api/users/1/500?sort=new   // newest users
-#* get /api/users/1/500?sort=old   // oldest users    etc..
-
 

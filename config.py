@@ -20,3 +20,8 @@ class Config(object):
   JWT_TOKEN_LOCATION = ["cookies"]
   JWT_SECRET_KEY = "supa-dupa-secreeet"
   JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+
+
+# API customizable settings
+class ApiConfig(object):
+  USERS_MAX_QUERY = 500
